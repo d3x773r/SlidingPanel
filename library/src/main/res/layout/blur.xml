@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.ms.square.android.glassview.GlassView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:glassview="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/glass_view"
-    android:visibility="invisible"
+    app:blurRadius="10"
+    android:visibility="visible"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    glassview:blurRadius="0" />
+    android:layout_height="match_parent"/>
