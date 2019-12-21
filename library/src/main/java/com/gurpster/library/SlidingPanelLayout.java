@@ -25,7 +25,7 @@ import android.view.animation.Interpolator;
 
 import androidx.core.view.ViewCompat;
 
-import com.ms.square.android.glassview.GlassView;
+import com.gurpster.library.blur.GlassView;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

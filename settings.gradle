@@ -1,2 +1,2 @@
-include ':app', ':library', ':glassview'
+include ':app', ':library'
 rootProject.name='SlidingPanel'
