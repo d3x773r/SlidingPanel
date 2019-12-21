@@ -4,11 +4,13 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.AttributeSet;
@@ -25,7 +27,7 @@ import android.view.animation.Interpolator;
 
 import androidx.core.view.ViewCompat;
 
-import com.ms.square.android.glassview.GlassView;
+import com.gurpster.library.blur.GlassView;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -274,6 +276,10 @@ public class SlidingPanelLayout extends ViewGroup {
 
     private final Rect mTmpRect = new Rect();
 
+    private float mRadius;
+    private static final float DEFAULT_RADIUS = 0;
+    private GradientDrawable.Orientation orientation;
+
     /**
      * Listener for monitoring events about sliding panes.
      */
@@ -353,6 +359,8 @@ public class SlidingPanelLayout extends ViewGroup {
 
             mSlideState = PanelState.values()[ta.getInt(R.styleable.SlidingPanelLayout_initialState, DEFAULT_SLIDE_STATE.ordinal())];
 
+            mRadius = ta.getFloat(R.styleable.SlidingPanelLayout_panelCornerRadius, DEFAULT_RADIUS);
+
             int interpolatorResId = ta.getResourceId(R.styleable.SlidingPanelLayout_scrollInterpolator, -1);
             if (interpolatorResId != -1) {
                 scrollerInterpolator = AnimationUtils.loadInterpolator(context, interpolatorResId);
@@ -377,9 +385,13 @@ public class SlidingPanelLayout extends ViewGroup {
         // If the shadow height is zero, don't show the shadow
         if (mShadowHeight > 0) {
             if (mIsSlidingUp) {
-                mShadowDrawable = getResources().getDrawable(R.drawable.above_shadow);
+                orientation = GradientDrawable.Orientation.BOTTOM_TOP;
+                mShadowDrawable = gradientDrawable();
+//                mShadowDrawable = getResources().getDrawable(R.drawable.above_shadow);
             } else {
-                mShadowDrawable = getResources().getDrawable(R.drawable.below_shadow);
+                orientation = GradientDrawable.Orientation.TOP_BOTTOM;
+                mShadowDrawable = gradientDrawable();
+//                mShadowDrawable = getResources().getDrawable(R.drawable.below_shadow);
             }
         } else {
             mShadowDrawable = null;
@@ -1373,6 +1385,9 @@ public class SlidingPanelLayout extends ViewGroup {
                 canvas.drawRect(mTmpRect, mCoveredFadePaint);
             }
 
+            mRadius = (mSlideOffset * 5);
+            mShadowDrawable = gradientDrawable();
+
             if (mBlurBackground && mSlideOffset > 0) {
 //                if (mBlurView.getVisibility() != View.VISIBLE) {
 //                    mBlurView.setVisibility(View.VISIBLE);
@@ -1534,6 +1549,60 @@ public class SlidingPanelLayout extends ViewGroup {
             state = bundle.getParcelable("superState");
         }
         super.onRestoreInstanceState(state);
+    }
+
+    private Drawable gradientDrawable() {
+
+        float[] radii;
+        switch (orientation) {
+            case BOTTOM_TOP:
+                radii = new float[]{
+                        mRadius,
+                        mRadius,
+                        DEFAULT_RADIUS,
+                        DEFAULT_RADIUS
+                };
+                break;
+            case TOP_BOTTOM:
+                radii = new float[]{
+                        DEFAULT_RADIUS,
+                        DEFAULT_RADIUS,
+                        mRadius,
+                        mRadius
+                };
+                break;
+//            case LEFT_RIGHT:
+//                radii = new float[]{
+//                        mTopLeftRadius,
+//                        mTopRightRadius,
+//                        mBottomRightRadius,
+//                        mBottomLeftRadius
+//                };
+//                break;
+//            case RIGHT_LEFT:
+//                radii = new float[]{
+//                        mTopLeftRadius,
+//                        mTopRightRadius,
+//                        mBottomRightRadius,
+//                        mBottomLeftRadius
+//                };
+//                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + orientation);
+        }
+
+        GradientDrawable gradientDrawable = new GradientDrawable(
+                orientation,
+                new int[]{
+                        Color.parseColor("#20000000"),
+                        Color.TRANSPARENT,
+                        Color.TRANSPARENT
+                }
+        );
+        gradientDrawable.setShape(GradientDrawable.RECTANGLE);
+        gradientDrawable.setGradientType(GradientDrawable.LINEAR_GRADIENT);
+        gradientDrawable.setCornerRadii(radii);
+        return gradientDrawable;
     }
 
     private class DragHelperCallback extends ViewDragHelper.Callback {

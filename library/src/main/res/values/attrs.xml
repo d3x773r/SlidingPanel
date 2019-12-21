@@ -22,6 +22,7 @@
             <enum name="hidden" value="3" />
         </attr>
         <attr name="scrollInterpolator" format="reference" />
+        <attr name="panelCornerRadius" format="float" />
     </declare-styleable>
 
     <declare-styleable name="GlassView">
