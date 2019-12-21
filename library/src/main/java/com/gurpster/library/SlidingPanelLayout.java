@@ -9,12 +9,10 @@ import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -25,7 +23,6 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Interpolator;
 
-import androidx.core.view.MotionEventCompat;
 import androidx.core.view.ViewCompat;
 
 import com.ms.square.android.glassview.GlassView;
@@ -230,6 +227,7 @@ public class SlidingPanelLayout extends ViewGroup {
      * range [0, 1] where 0 = collapsed, 1 = expanded.
      */
     private float mSlideOffset;
+    private float mReverseSlideOffset;
 
     /**
      * How far in pixels the slideable panel may move.
@@ -254,7 +252,7 @@ public class SlidingPanelLayout extends ViewGroup {
 
     private float mPrevMotionX;
     private float mPrevMotionY;
-//    private float mPrevMotionLocation;
+    //    private float mPrevMotionLocation;
     private float mInitialMotionX;
     private float mInitialMotionY;
     private boolean mIsScrollableViewHandlingTouch = false;
@@ -264,6 +262,7 @@ public class SlidingPanelLayout extends ViewGroup {
 
     private final ViewDragHelper mDragHelper;
 
+    //    private ViewGroup mRootBlurView;
     private GlassView mBlurView;
 
     /**
@@ -333,7 +332,6 @@ public class SlidingPanelLayout extends ViewGroup {
             int gravity = defAttrs.getInt(0, Gravity.NO_GRAVITY);
             setGravity(gravity);
             defAttrs.recycle();
-
 
             TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.SlidingPanelLayout);
 
@@ -746,8 +744,7 @@ public class SlidingPanelLayout extends ViewGroup {
     void dispatchOnPanelSlide(View panel) {
         synchronized (mPanelSlideListeners) {
             for (PanelSlideListener l : mPanelSlideListeners) {
-                float mInverseSlideOffset = (mSlideOffset);
-                l.onPanelSlide(panel, mSlideOffset, mInverseSlideOffset);
+                l.onPanelSlide(panel, mSlideOffset, mReverseSlideOffset);
             }
         }
     }
@@ -1194,6 +1191,17 @@ public class SlidingPanelLayout extends ViewGroup {
                 : (float) (topPosition - topBoundCollapsed) / mSlideRange);
     }
 
+    private float computeReverseSlideOffset(int topPosition) {
+        // Compute the panel top position if the panel is collapsed (offset 0)
+        final int topBoundCollapsed = computePanelTopPosition(0);
+
+        // Determine the new slide offset based on the collapsed top position and the new required
+        // top position
+        return (mIsSlidingUp
+                ? (float) (topPosition - topBoundCollapsed) / mSlideRange
+                : (float) (topBoundCollapsed - topPosition) / mSlideRange);
+    }
+
     /**
      * Returns the current state of the panel as an enum.
      *
@@ -1211,7 +1219,7 @@ public class SlidingPanelLayout extends ViewGroup {
     public void setPanelState(PanelState state) {
 
         // Abort any running animation, to allow state change
-        if(mDragHelper.getViewDragState() == ViewDragHelper.STATE_SETTLING){
+        if (mDragHelper.getViewDragState() == ViewDragHelper.STATE_SETTLING) {
 //            Log.d(TAG, "View is settling. Aborting animation.");
             mDragHelper.abort();
         }
@@ -1302,7 +1310,7 @@ public class SlidingPanelLayout extends ViewGroup {
     private void applyParallaxForCurrentSlideOffset() {
         if (mParallaxOffset > 0) {
             int mainViewOffset = getCurrentParallaxOffset();
-            ViewCompat.setTranslationY(mMainView, mainViewOffset);
+            mMainView.setTranslationY(mainViewOffset);
         }
     }
 
@@ -1366,10 +1374,28 @@ public class SlidingPanelLayout extends ViewGroup {
             }
 
             if (mBlurBackground && mSlideOffset > 0) {
-                mBlurView.setVisibility(View.VISIBLE);
+//                if (mBlurView.getVisibility() != View.VISIBLE) {
+//                    mBlurView.setVisibility(View.VISIBLE);
+//                    YoYo.with(Techniques.FadeIn)
+//                            .duration(150)
+//                            .playOn(mBlurView);
+//                }
+                mBlurView.setAlpha(mSlideOffset * 5);
                 mBlurView.setBlurRadius(mSlideOffset * 25);
             } else if (mBlurView != null) {
-                mBlurView.setVisibility(View.INVISIBLE);
+                mBlurView.setAlpha(mSlideOffset * 5);
+//                if (mBlurView.getVisibility() == View.VISIBLE) {
+//                    mBlurView.setVisibility(View.VISIBLE);
+//                    YoYo.with(Techniques.FadeOut)
+//                            .duration(150)
+//                            .onEnd(new YoYo.AnimatorCallback() {
+//                                @Override
+//                                public void call(Animator animator) {
+//                                    mBlurView.setVisibility(View.INVISIBLE);
+//                                }
+//                            })
+//                            .playOn(mBlurView);
+//                }
             }
         } else {
             result = super.drawChild(canvas, child, drawingTime);
